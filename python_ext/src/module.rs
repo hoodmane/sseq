@@ -232,9 +232,11 @@ impl FiniteDimensionalModuleBuilder {
                 .copied()
                 .ok_or_else(|| anyhow!("Unknown generator: {name}"))
         };
-        self.module_mut()?
-            .parse_action(gen_to_idx, action, overwrite)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+        let module = self.module_mut()?;
+        let parsed = algebra::module::parse_action(module.algebra().as_ref(), gen_to_idx, action)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        module.apply_action(&parsed, overwrite);
+        Ok(())
     }
 
     /// Extend the action from algebra generators to all algebra basis elements

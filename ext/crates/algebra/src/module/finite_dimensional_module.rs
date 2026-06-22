@@ -446,6 +446,89 @@ impl<M: Module> From<&M> for FiniteDimensionalModule<M::Algebra> {
     }
 }
 
+/// The parse tree produced by [`parse_action`] from an action string such as
+/// `"Sq2 x0 = x2"` or `"Sq1 x0 = x1 + x3"`.
+///
+/// It records the (resolved) left-hand side operation and input generator
+/// together with the list of right-hand side terms, so that it can later be
+/// applied to a module with [`FiniteDimensionalModule::apply_action`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ParsedAction {
+    /// Degree of the algebra operation on the left-hand side.
+    pub op_deg: i32,
+    /// Index of the algebra operation on the left-hand side.
+    pub op_idx: usize,
+    /// Degree of the input generator on the left-hand side.
+    pub input_deg: i32,
+    /// Index of the input generator on the left-hand side.
+    pub input_idx: usize,
+    /// Degree of the output (i.e. `input_deg + op_deg`), shared by every
+    /// right-hand side term.
+    pub output_deg: i32,
+    /// The right-hand side terms, each a `(basis index, coefficient)` pair. An
+    /// empty list corresponds to a right-hand side of `0`.
+    pub output: Vec<(usize, u32)>,
+}
+
+/// Parse an action string into a [`ParsedAction`] parse tree.
+///
+/// `entry` is a string such as `"Sq2 x0 = x2"` or `"Sq1 x0 = x1 + x3"`.
+/// `gen_to_idx` resolves a generator name to its `(degree, index)`, and
+/// `algebra` is used to resolve the algebra element on the left-hand side. This
+/// performs all validation that does not depend on the module's action table;
+/// the result can then be applied via
+/// [`FiniteDimensionalModule::apply_action`].
+pub fn parse_action<A: GeneratedAlgebra>(
+    algebra: &A,
+    gen_to_idx: impl for<'a> Fn(&'a str) -> anyhow::Result<(i32, usize)>,
+    entry: &str,
+) -> anyhow::Result<ParsedAction> {
+    let (lhs, rhs) = entry
+        .split_once(" = ")
+        .ok_or_else(|| anyhow!("Invalid action: {entry}"))?;
+
+    let (action, g) = lhs
+        .rsplit_once(' ')
+        .ok_or_else(|| anyhow!("Invalid action: {entry}"))?;
+
+    let (op_deg, op_idx) = algebra
+        .basis_element_from_string(action)
+        .ok_or_else(|| anyhow!("Invalid algebra element: {action}"))?;
+
+    let (input_deg, input_idx) = gen_to_idx(g.trim())?;
+    let output_deg = input_deg + op_deg;
+
+    let mut output = Vec::new();
+    if rhs != "0" {
+        for item in rhs.split(" + ") {
+            let (coef, g) = match item.split_once(' ') {
+                Some((coef, g)) => (
+                    str::parse(coef)
+                        .map_err(|_| anyhow!("Invalid item on right-hand side: {item}"))?,
+                    g,
+                ),
+                None => (1, item),
+            };
+            let (deg, idx) = gen_to_idx(g.trim())?;
+            if deg != output_deg {
+                return Err(anyhow!(
+                    "Degree of {g} is {deg} but degree of LHS is {output_deg}"
+                ));
+            }
+            output.push((idx, coef));
+        }
+    }
+
+    Ok(ParsedAction {
+        op_deg,
+        op_idx,
+        input_deg,
+        input_idx,
+        output_deg,
+        output,
+    })
+}
+
 impl<A: GeneratedAlgebra> FiniteDimensionalModule<A> {
     pub fn from_json(algebra: Arc<A>, json: &Value) -> anyhow::Result<Self> {
         let (graded_dimension, gen_names, gen_to_idx) = crate::module_gens_from_json(&json["gens"]);
@@ -460,9 +543,9 @@ impl<A: GeneratedAlgebra> FiniteDimensionalModule<A> {
 
         let actions = Vec::<String>::deserialize(&json["actions"]).unwrap();
         for action in actions {
-            result
-                .parse_action(&gen_to_idx, &action, false)
+            let parsed = parse_action(&*algebra, &gen_to_idx, &action)
                 .with_context(|| format!("Failed to parse action: {action}"))?;
+            result.apply_action(&parsed, false);
         }
         for input_degree in (result.min_degree()..=result.max_degree().unwrap()).rev() {
             for output_degree in input_degree + 1..=result.max_degree().unwrap() {
@@ -488,57 +571,26 @@ impl<A: GeneratedAlgebra> FiniteDimensionalModule<A> {
         json["actions"] = self.actions_to_json();
     }
 
-    pub fn parse_action(
-        &mut self,
-        gen_to_idx: impl for<'a> Fn(&'a str) -> anyhow::Result<(i32, usize)>,
-        entry: &str,
-        overwrite: bool,
-    ) -> anyhow::Result<()> {
-        let algebra = self.algebra();
-
-        let (lhs, rhs) = entry
-            .split_once(" = ")
-            .ok_or_else(|| anyhow!("Invalid action: {entry}"))?;
-
-        let (action, g) = lhs
-            .rsplit_once(' ')
-            .ok_or_else(|| anyhow!("Invalid action: {entry}"))?;
-
-        let (op_deg, op_idx) = algebra
-            .basis_element_from_string(action)
-            .ok_or_else(|| anyhow!("Invalid algebra element: {action}"))?;
-
-        let (input_deg, input_idx) = gen_to_idx(g.trim())?;
-
-        let row = self.action_mut(op_deg, op_idx, input_deg, input_idx);
+    /// Apply a [`ParsedAction`] produced by [`parse_action`] to this module.
+    ///
+    /// This walks the parse tree and writes the action into the relevant row.
+    /// If `overwrite` is set, the existing row is zeroed before the terms are
+    /// added.
+    pub fn apply_action(&mut self, action: &ParsedAction, overwrite: bool) {
+        let row = self.action_mut(
+            action.op_deg,
+            action.op_idx,
+            action.input_deg,
+            action.input_idx,
+        );
 
         if overwrite {
             row.set_to_zero();
         }
 
-        if rhs == "0" {
-            return Ok(());
-        }
-
-        for item in rhs.split(" + ") {
-            let (coef, g) = match item.split_once(' ') {
-                Some((coef, g)) => (
-                    str::parse(coef)
-                        .map_err(|_| anyhow!("Invalid item on right-hand side: {item}"))?,
-                    g,
-                ),
-                None => (1, item),
-            };
-            let (deg, idx) = gen_to_idx(g.trim())?;
-            if deg != input_deg + op_deg {
-                return Err(anyhow!(
-                    "Degree of {g} is {deg} but degree of LHS is {}",
-                    input_deg + op_deg
-                ));
-            }
+        for &(idx, coef) in &action.output {
             row.add_basis_element(idx, coef);
         }
-        Ok(())
     }
 
     pub fn check_validity(

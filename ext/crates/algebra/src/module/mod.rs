@@ -15,7 +15,9 @@ pub mod block_structure;
 
 pub mod homomorphism;
 
-pub use finite_dimensional_module::FiniteDimensionalModule as FDModule;
+pub use finite_dimensional_module::{
+    FiniteDimensionalModule as FDModule, ParsedAction, parse_action,
+};
 pub use finitely_presented_module::FinitelyPresentedModule as FPModule;
 pub use free_module::{
     FreeModule, GeneratorData, MuFreeModule, OperationGeneratorPair, UnstableFreeModule,
