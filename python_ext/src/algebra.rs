@@ -15,6 +15,7 @@ use pyo3::prelude::*;
 #[pyclass(name = "MilnorAlgebra", module = "sseq_ext")]
 pub struct MilnorAlgebra {
     pub inner: Arc<InnerMA>,
+    pub unstable: bool,
 }
 
 #[pymethods]
@@ -29,6 +30,7 @@ impl MilnorAlgebra {
             .map_err(|e| PyValueError::new_err(format!("Invalid prime: {e}")))?;
         Ok(Self {
             inner: Arc::new(InnerMA::new(p, unstable)),
+            unstable,
         })
     }
 
@@ -60,9 +62,13 @@ impl MilnorAlgebra {
     }
 
     fn __repr__(&self) -> String {
-        format!(
-            "MilnorAlgebra(p={})",
-            self.inner.prime().as_u32()
-        )
+        if self.unstable {
+            format!(
+                "MilnorAlgebra(p={}, unstable=True)",
+                self.inner.prime().as_u32()
+            )
+        } else {
+            format!("MilnorAlgebra(p={})", self.inner.prime().as_u32())
+        }
     }
 }
