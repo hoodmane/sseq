@@ -217,21 +217,17 @@ impl ViewOwner {
     /// Acquire a read borrow on the parent. Returns a guard that pins it.
     fn borrow<'py>(&'py self, py: Python<'py>) -> PyResult<ViewBorrow<'py>> {
         match self {
-            ViewOwner::FpVector(p) => Ok(ViewBorrow::FpVector(
-                p.bind(py).try_borrow().map_err(|e| {
-                    PyBufferError::new_err(format!("Parent FpVector is borrowed: {e}"))
-                })?,
-            )),
-            ViewOwner::Matrix(p) => Ok(ViewBorrow::Matrix(
-                p.bind(py).try_borrow().map_err(|e| {
-                    PyBufferError::new_err(format!("Parent Matrix is borrowed: {e}"))
-                })?,
-            )),
+            ViewOwner::FpVector(p) => Ok(ViewBorrow::FpVector(p.bind(py).try_borrow().map_err(
+                |e| PyBufferError::new_err(format!("Parent FpVector is borrowed: {e}")),
+            )?)),
+            ViewOwner::Matrix(p) => {
+                Ok(ViewBorrow::Matrix(p.bind(py).try_borrow().map_err(
+                    |e| PyBufferError::new_err(format!("Parent Matrix is borrowed: {e}")),
+                )?))
+            }
             ViewOwner::AugmentedMatrix(p) => Ok(ViewBorrow::AugmentedMatrix(
                 p.bind(py).try_borrow().map_err(|e| {
-                    PyBufferError::new_err(format!(
-                        "Parent AugmentedMatrix is borrowed: {e}"
-                    ))
+                    PyBufferError::new_err(format!("Parent AugmentedMatrix is borrowed: {e}"))
                 })?,
             )),
         }
@@ -245,16 +241,14 @@ impl ViewOwner {
                     PyBufferError::new_err(format!("Parent FpVector is borrowed: {e}"))
                 })?,
             )),
-            ViewOwner::Matrix(p) => Ok(ViewBorrowMut::Matrix(
-                p.bind(py).try_borrow_mut().map_err(|e| {
-                    PyBufferError::new_err(format!("Parent Matrix is borrowed: {e}"))
-                })?,
-            )),
+            ViewOwner::Matrix(p) => {
+                Ok(ViewBorrowMut::Matrix(p.bind(py).try_borrow_mut().map_err(
+                    |e| PyBufferError::new_err(format!("Parent Matrix is borrowed: {e}")),
+                )?))
+            }
             ViewOwner::AugmentedMatrix(p) => Ok(ViewBorrowMut::AugmentedMatrix(
                 p.bind(py).try_borrow_mut().map_err(|e| {
-                    PyBufferError::new_err(format!(
-                        "Parent AugmentedMatrix is borrowed: {e}"
-                    ))
+                    PyBufferError::new_err(format!("Parent AugmentedMatrix is borrowed: {e}"))
                 })?,
             )),
         }
@@ -730,9 +724,9 @@ impl Matrix {
         vec: &mut FpVector,
     ) -> PyResult<()> {
         // Hold the borrow_mut for the whole call.
-        let _guard = slf.try_borrow_mut().map_err(|e| {
-            PyBufferError::new_err(format!("test hook: cannot borrow self: {e}"))
-        })?;
+        let _guard = slf
+            .try_borrow_mut()
+            .map_err(|e| PyBufferError::new_err(format!("test hook: cannot borrow self: {e}")))?;
         // Try a write through the view; should fail if the view's owner is
         // `self`, because the parent is already borrow_mut'd.
         vec.with_slice_mut_pub(py, |mut s| s.set_entry(0, 1))
@@ -800,11 +794,7 @@ impl AugmentedInner {
 
     /// Borrow the (square or rectangular) sub-block defined by segments
     /// `[start_seg, end_seg]` (inclusive) as a `MatrixSliceMut`.
-    fn segment_slice_mut(
-        &mut self,
-        start_seg: usize,
-        end_seg: usize,
-    ) -> m::MatrixSliceMut<'_> {
+    fn segment_slice_mut(&mut self, start_seg: usize, end_seg: usize) -> m::MatrixSliceMut<'_> {
         match self {
             AugmentedInner::N2(m) => m.segment(start_seg, end_seg),
             AugmentedInner::N3(m) => m.segment(start_seg, end_seg),
@@ -821,15 +811,11 @@ impl AugmentedMatrix {
         let p = vp_from_u32(p)?;
         let inner = match columns.len() {
             2 => AugmentedInner::N2(AM::<2>::new(p, rows, [columns[0], columns[1]])),
-            3 => AugmentedInner::N3(AM::<3>::new(
-                p,
-                rows,
-                [columns[0], columns[1], columns[2]],
-            )),
+            3 => AugmentedInner::N3(AM::<3>::new(p, rows, [columns[0], columns[1], columns[2]])),
             n => {
                 return Err(PyValueError::new_err(format!(
                     "AugmentedMatrix only supports 2 or 3 segments, got {n}"
-                )))
+                )));
             }
         };
         Ok(Self { inner })
@@ -1137,12 +1123,7 @@ fn make_augmented_row_view(
     let (rows, prime, start, end) = {
         let r = bound.borrow();
         match seg_range {
-            None => (
-                r.inner.rows(),
-                r.inner.prime(),
-                0,
-                r.inner.columns(),
-            ),
+            None => (r.inner.rows(), r.inner.prime(), 0, r.inner.columns()),
             Some((start_seg, end_seg)) => {
                 // Validate before calling `segment_range`, which indexes
                 // fixed-size arrays and would otherwise panic on an
@@ -1181,11 +1162,7 @@ pub struct AugmentedMatrixView {
 
 #[pymethods]
 impl AugmentedMatrixView {
-    fn __getitem__<'py>(
-        &self,
-        py: Python<'py>,
-        key: Bound<'py, PyAny>,
-    ) -> PyResult<FpVector> {
+    fn __getitem__<'py>(&self, py: Python<'py>, key: Bound<'py, PyAny>) -> PyResult<FpVector> {
         if let Ok(row) = key.extract::<isize>() {
             return make_augmented_row_view(py, &self.matrix, row, None, false);
         }
@@ -1216,11 +1193,7 @@ pub struct AugmentedMatrixViewMut {
 
 #[pymethods]
 impl AugmentedMatrixViewMut {
-    fn __getitem__<'py>(
-        &self,
-        py: Python<'py>,
-        key: Bound<'py, PyAny>,
-    ) -> PyResult<FpVector> {
+    fn __getitem__<'py>(&self, py: Python<'py>, key: Bound<'py, PyAny>) -> PyResult<FpVector> {
         if let Ok(row) = key.extract::<isize>() {
             return make_augmented_row_view(py, &self.matrix, row, None, true);
         }
@@ -1259,11 +1232,7 @@ impl AugmentedMatrixViewMut {
 
 /// Validate a `(start_seg, end_seg)` segment range against the number of
 /// segments in `inner`.
-fn check_segment_range(
-    inner: &AugmentedInner,
-    start_seg: usize,
-    end_seg: usize,
-) -> PyResult<()> {
+fn check_segment_range(inner: &AugmentedInner, start_seg: usize, end_seg: usize) -> PyResult<()> {
     let n = inner.num_segments();
     if start_seg >= n || end_seg >= n {
         return Err(PyIndexError::new_err(format!(
@@ -1271,9 +1240,7 @@ fn check_segment_range(
         )));
     }
     if start_seg > end_seg {
-        return Err(PyIndexError::new_err(
-            "segment range start must be <= end",
-        ));
+        return Err(PyIndexError::new_err("segment range start must be <= end"));
     }
     Ok(())
 }
@@ -1319,7 +1286,11 @@ impl AugmentedMatrixSegmentAccessor {
 }
 
 /// Mutable segment accessor. Created by `AugmentedMatrix.segment_mut`.
-#[pyclass(name = "AugmentedMatrixSegmentAccessorMut", module = "sseq_ext", weakref)]
+#[pyclass(
+    name = "AugmentedMatrixSegmentAccessorMut",
+    module = "sseq_ext",
+    weakref
+)]
 pub struct AugmentedMatrixSegmentAccessorMut {
     matrix: Py<AugmentedMatrix>,
 }
@@ -1430,9 +1401,7 @@ impl AugmentedMatrixSegmentViewMut {
     fn add_identity(&self, py: Python<'_>) -> PyResult<()> {
         let bound = self.matrix.bind(py);
         let mut r = bound.try_borrow_mut().map_err(|e| {
-            PyBufferError::new_err(format!(
-                "Parent AugmentedMatrix is borrowed: {e}"
-            ))
+            PyBufferError::new_err(format!("Parent AugmentedMatrix is borrowed: {e}"))
         })?;
         let mut slice = r.inner.segment_slice_mut(self.start_seg, self.end_seg);
         if slice.rows() != slice.columns() {

@@ -242,5 +242,3 @@ pub fn construct(
         inner: Arc::new(resolution),
     })
 }
-
-

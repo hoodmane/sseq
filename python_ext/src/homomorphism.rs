@@ -175,8 +175,7 @@ impl ResolutionHomomorphism {
 /// three parameters (which is the case used by `massey.rs`).
 #[pyclass(name = "ChainHomotopy", module = "sseq_ext")]
 pub struct ChainHomotopy {
-    pub inner:
-        Arc<InnerCH<QueryModuleResolution, QueryModuleResolution, QueryModuleResolution>>,
+    pub inner: Arc<InnerCH<QueryModuleResolution, QueryModuleResolution, QueryModuleResolution>>,
 }
 
 #[pymethods]

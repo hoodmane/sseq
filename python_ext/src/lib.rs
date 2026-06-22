@@ -20,6 +20,7 @@ mod chart;
 mod coordinates;
 mod fp_types;
 mod homomorphism;
+mod module;
 mod resolution;
 mod secondary;
 mod sseq_types;
@@ -34,6 +35,7 @@ fn _sseq_ext(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(chart::write_sseq_svg, m)?)?;
 
     m.add_class::<algebra::MilnorAlgebra>()?;
+    m.add_class::<algebra::AdemAlgebra>()?;
     m.add_class::<coordinates::Bidegree>()?;
     m.add_class::<coordinates::BidegreeGenerator>()?;
     m.add_class::<coordinates::BidegreeElement>()?;
@@ -51,6 +53,8 @@ fn _sseq_ext(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<fp_types::Subspace>()?;
     m.add_class::<resolution::Resolution>()?;
     m.add_class::<resolution::FreeModule>()?;
+    m.add_class::<module::FiniteDimensionalModuleBuilder>()?;
+    m.add_class::<module::FiniteDimensionalModule>()?;
     m.add_class::<homomorphism::FreeModuleHomomorphism>()?;
     m.add_class::<homomorphism::ResolutionHomomorphism>()?;
     m.add_class::<homomorphism::ChainHomotopy>()?;
@@ -67,4 +71,3 @@ fn init_logging() -> PyResult<()> {
     let _ = ext::utils::init_logging();
     Ok(())
 }
-

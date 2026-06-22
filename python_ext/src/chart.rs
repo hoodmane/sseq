@@ -54,9 +54,7 @@ pub fn write_sseq_svg(
         res.algebra()
             .default_filtration_one_products()
             .into_iter()
-            .map(|(name, op_deg, op_idx)| {
-                (name, res.filtration_one_products(op_deg, op_idx))
-            })
+            .map(|(name, op_deg, op_idx)| (name, res.filtration_one_products(op_deg, op_idx)))
             .collect()
     } else {
         Vec::new()

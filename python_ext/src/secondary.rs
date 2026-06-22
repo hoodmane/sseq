@@ -9,9 +9,7 @@ use std::sync::Arc;
 
 use algebra::SteenrodAlgebra;
 use ext::chain_complex::ChainComplex;
-use ext::secondary::{
-    SecondaryHomotopy as InnerSH, SecondaryLift, SecondaryResolution as InnerSR,
-};
+use ext::secondary::{SecondaryHomotopy as InnerSH, SecondaryLift, SecondaryResolution as InnerSR};
 use ext::utils::QueryModuleResolution;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;

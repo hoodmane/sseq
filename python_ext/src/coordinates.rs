@@ -8,7 +8,14 @@ use sseq::coordinates as c;
 use crate::fp_types::FpVector;
 
 /// A bidegree `(n, s)` with `t = n + s`.
-#[pyclass(name = "Bidegree", module = "sseq_ext", frozen, eq, hash, skip_from_py_object)]
+#[pyclass(
+    name = "Bidegree",
+    module = "sseq_ext",
+    frozen,
+    eq,
+    hash,
+    skip_from_py_object
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Bidegree {
     pub inner: c::Bidegree,
@@ -90,7 +97,14 @@ impl Bidegree {
 }
 
 /// A basis element `(degree, idx)` of a bidegree.
-#[pyclass(name = "BidegreeGenerator", module = "sseq_ext", frozen, eq, hash, skip_from_py_object)]
+#[pyclass(
+    name = "BidegreeGenerator",
+    module = "sseq_ext",
+    frozen,
+    eq,
+    hash,
+    skip_from_py_object
+)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct BidegreeGenerator {
     pub inner: c::BidegreeGenerator,
