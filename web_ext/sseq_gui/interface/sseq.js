@@ -327,15 +327,17 @@ export class ExtSseq {
                 <input name="source" is="class-input"
                     title="Express source in E${page} page basis"
                     length="${sourceDim}" p=${this.p}
-                    value="${sourceClass ? '[' + sourceClass.join(', ') + ']' : ''
-            }"
+                    value="${
+                        sourceClass ? '[' + sourceClass.join(', ') + ']' : ''
+                    }"
                 ></input>
                 =
                 <input name="target" is="class-input"
                     title="Express target in E${page} page basis"
                     length="${targetDim}" p=${this.p}
-                    value="${targetClass ? '[' + targetClass.join(', ') + ']' : ''
-            }"
+                    value="${
+                        targetClass ? '[' + targetClass.join(', ') + ']' : ''
+                    }"
                 ></input>
             </section>
             <section>
@@ -394,7 +396,7 @@ export class ExtSseq {
             dialog(
                 `Add permanent class at (${x}, ${y})`,
                 '<section>There are no surviving classes</section>',
-                () => { },
+                () => {},
                 'OK',
             );
         } else if (classes[0].length == 1) {
@@ -448,8 +450,9 @@ export class ExtSseq {
             'Resolve further',
             `<section style="input-row">
                 <label>New maximum degree</label>
-                <input style="width: 5em" type="number" value="${this.maxDegree + 10
-            }">
+                <input style="width: 5em" type="number" value="${
+                    this.maxDegree + 10
+                }">
             </section>`,
             dialog => {
                 newmax = parseInt(dialog.querySelector('input').value);
@@ -527,8 +530,8 @@ export class ExtSseq {
             'maxy',
             Math.ceil(
                 (this.maxDegree - this.minDegree) * eval(this.vanishingSlope) +
-                1 +
-                eval(this.vanishingIntercept),
+                    1 +
+                    eval(this.vanishingIntercept),
             ),
         ); // We trust our inputs *so* much.
     }

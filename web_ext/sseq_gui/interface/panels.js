@@ -89,9 +89,9 @@ export const ACTION_TO_DISPLAY = {
           KATEX_ARGS,
       )}</summary>
       (${details.source.x}, ${details.source.y}): ${katex.renderToString(
-            rowToLaTeX(details.source.class),
-            KATEX_ARGS,
-        )}
+          rowToLaTeX(details.source.class),
+          KATEX_ARGS,
+      )}
     </details>
   </li>
   <li>
@@ -101,9 +101,9 @@ export const ACTION_TO_DISPLAY = {
           KATEX_ARGS,
       )}</summary>
       (${details.target.x}, ${details.target.y}): ${katex.renderToString(
-            rowToLaTeX(details.target.class),
-            KATEX_ARGS,
-        )}
+          rowToLaTeX(details.target.class),
+          KATEX_ARGS,
+      )}
     </details>
   </li>
 </ul>`;

@@ -13,7 +13,15 @@
         "sourceType": "module"
     },
     "rules": {
-        "no-unused-vars": ["error", { "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "ignoreRestSiblings": false }],
+        "no-unused-vars": [
+            "error",
+            {
+                "vars": "all",
+                "varsIgnorePattern": "^_",
+                "args": "after-used",
+                "ignoreRestSiblings": false
+            }
+        ],
         "no-constant-condition": ["error", { "checkLoops": false }]
     }
 }

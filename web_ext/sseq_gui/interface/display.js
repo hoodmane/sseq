@@ -243,7 +243,7 @@ export class UnitDisplay {
                 dialog(
                     `Add differential at (${oldSelected[0]}, ${oldSelected[1]})`,
                     '<section>Invalid target for differential</section>',
-                    () => { },
+                    () => {},
                     'OK',
                 );
             }

@@ -12,18 +12,20 @@ export function openSocket(initialData, onMessage) {
         const name = initialData[0].action['Construct'].module_name;
         const algebra = initialData[0].action['Construct'].algebra_name;
 
-        fetch(`steenrod_modules/${name}.json`).then(response => response.json()).then(json => {
-            initialData[0].action = {
-                ConstructJson: {
-                    algebra_name: algebra,
-                    data: JSON.stringify(json),
-                },
-            };
+        fetch(`steenrod_modules/${name}.json`)
+            .then(response => response.json())
+            .then(json => {
+                initialData[0].action = {
+                    ConstructJson: {
+                        algebra_name: algebra,
+                        data: JSON.stringify(json),
+                    },
+                };
 
-            for (const data of initialData) {
-                send(data);
-            }
-        })
+                for (const data of initialData) {
+                    send(data);
+                }
+            });
     } else {
         // Wait for window.send to be defined first
         setTimeout(() => {

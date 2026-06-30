@@ -81,7 +81,10 @@ const cases = [
 
 for (const { filename, className, label } of cases) {
     test(`${filename}: a panic in run() is forwarded as an Error message`, async () => {
-        const { self, posted, instance } = await loadWorker(filename, className);
+        const { self, posted, instance } = await loadWorker(
+            filename,
+            className,
+        );
 
         instance.run = () => {
             throw new Error('boom');
@@ -106,7 +109,10 @@ for (const { filename, className, label } of cases) {
     });
 
     test(`${filename}: a successful run() posts nothing`, async () => {
-        const { self, posted, instance } = await loadWorker(filename, className);
+        const { self, posted, instance } = await loadWorker(
+            filename,
+            className,
+        );
 
         let received;
         instance.run = data => {
@@ -115,7 +121,11 @@ for (const { filename, className, label } of cases) {
 
         self.onmessage({ data: 'payload' });
 
-        assert.equal(received, 'payload', 'run() should receive the message data');
+        assert.equal(
+            received,
+            'payload',
+            'run() should receive the message data',
+        );
         assert.equal(posted.length, 0, 'no error message should be posted');
     });
 }
